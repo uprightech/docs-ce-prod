@@ -11,34 +11,29 @@ Interception scripts are written in [Jython](http://www.jython.org), enabling Ja
 While the syntax of the script requires Python, most of the functionality can be written in Java.
 
 !!! Note
-    If Python classes are imported, they must be "pure python." For example, a class that wraps C libraries can not be imported.
-    The same goes for python packages which require `cython` during compiling.
+    If Python classes are imported, they must be "pure Python." For example, a class that wraps C libraries can not be imported. The same goes for Python packages which require `cython` during compiling.
 
-#### Manually installing additional python code  
-  For the benefit of modularity and code reuse, python code for interception scripts may be split in different files. 
+#### Manually installing additional Python code  
+  For the benefit of modularity and code reuse, Python code for interception scripts may be split in different files. 
 An example would be code that's used by multiple interception scripts to communicate with a REST service for different 
 purposes (e.g. additional user authentication against a legacy system). 
- Simply copy the code for such a module or package to `/opt/gluu/python/libs/` in Gluu Server's container. 
 
-#### Using pip to install additional python packages
+ Copy the code for such a module or package to `/opt/gluu/python/libs/` in Gluu Server's container. 
 
-   Sometimes, it is time saving to just use an existing python package and the way to install it is with `pip`. As already 
-stated above, python packages and modules which are not "pure python" will simply not work, so keep that in mind. An example
-would be the `psycopg2` library used to connect to postgresql from python. Since it's basically a C wrapper around `libpq`
-it won't work with Jython. Also, python 3 packages / modules are not supported.
-  In order to install additional modules via `pip` , do the following:
-1. Find out about your jython version first. `cd` into the `/opt` directory in your Gluu Server container and run `ls`. 
-   A directory named `jython-<version>` should be listed too where `<version>` will correspond to the jython version. Note
-   that down 
-1. Open the file `/etc/gluu/conf/gluu.properties` and look for the line starting with `pythonModulesDir=`. Append the value
-   `/opt/jython-<version>/Lib/site-packages` to any existing value. Each value is separater by a colon (`:`). It should look 
-   something like this `pythonModulesDir=/opt/gluu/python/libs:/opt/jython-2.7.2a/Lib/site-packages`
+#### Using pip to install additional Python packages
+
+   Sometimes, it saves time to use an existing Python package and the way to install it is with `pip`. As already 
+stated above, Python packages and modules which are not "pure Python" will simply not work, so keep that in mind. An example
+would be the `psycopg2` library used to connect to PostgreSQL from Python. Since it's basically a C wrapper around `libpq`,
+it won't work with Jython. Also, Python 3 packages / modules are not supported.
+
+In order to install additional modules via `pip` , do the following:
+
+1. Find out about your Jython version first. `cd` into the `/opt` directory in your Gluu Server container and run `ls`. A directory named `jython-<version>` should be listed too where `<version>` will correspond to the Jython version. Note the version. 
+1. Open the file `/etc/gluu/conf/gluu.properties` and look for the line starting with `pythonModulesDir=`. Append the value `/opt/jython-<version>/Lib/site-packages` to any existing value. Each value is separater by a colon (`:`). It should look something like this `pythonModulesDir=/opt/gluu/python/libs:/opt/jython-2.7.2a/Lib/site-packages`
 1. Run the following command `/opt/jython-<version>/bin/jython -m ensurepip` 
-1. Install your library  with `/opt/jython-<version>/bin/pip install <library_name>` where `<library_name>` is the name of the 
-   library to install.
+1. Install your library  with `/opt/jython-<version>/bin/pip install <library_name>` where `<library_name>` is the name of the library to install.
 1. Restart the `oxauth` service.
-
-
 
 ### Methods
 There are three methods that inherit a base interface:
@@ -135,7 +130,7 @@ The authentication interception script extends the base script type with methods
 
 |Method|`def logout(self, configurationAttributes, requestParameters)`|
 |---|---|
-|**Description**|This method is not mandatory. It can be used in cases when you need to execute specific logout logic within the authentication script when oxAuth receives an end session request. Also, it allows oxAuth to stop processing the end session request workflow if it returns `False`. As a result, it should either return `True` or `False` </br> </br> If `getApiVersion()` returns "3" for this script, `logout()` function becomes able to call external end session API at a 3rd party service before terminating sessions at Gluu Server. To employ this extension, the `/oxauth/logout.htm` endpoint needs to be called instead of `/oxauth/end_session`, using the same set of parameters. `logout()` function will then call `getLogoutExternalUrl()` and will redirect user agent to a URL returned by the latter (note that at this point Gluu's sessions are not yet killed). After the 3rd-party service has completed its end session routines, it must re-direct user back to `/oxauth/logout.htm` again with empty URL query string - that's enough for oxAuth to recognize it as a continuation of the extended logout flow, restore the original URL query string, and send user to `/oxauth/end_session` to complete it |
+|**Description**|This method is not mandatory. It can be used in cases when you need to execute specific logout logic in the authentication script when oxAuth receives an end session request to the `/oxauth/logout.htm` endpoint (which receives the same set of parameters than the usual `end_session` endpoint). This method should return `True` or `False`; when `False` oxAuth stops processing the end session request workflow.</br> </br> If `getApiVersion()` returns "3" for this script, `logout()` will call an external end session API at a 3rd party service before terminating sessions at Gluu Server. To do so it calls `getLogoutExternalUrl()` method and redirects the user agent to the URL returned by such method (note at this point Gluu's sessions are not yet killed). After the 3rd-party service has completed its end session routines, it must re-direct user back to `/oxauth/logout.htm` again with empty URL query string - that's enough for oxAuth to recognize it as a continuation of the extended logout flow, restore the original URL query string, and send user to `/oxauth/end_session` to complete it |
 |Method Parameters|`configurationAttributes` is `java.util.Map<String, SimpleCustomProperty>`<br/>`requestParameters` is `java.util.Map<String, String[]>`|
 
 Every deployment of the Gluu Server includes a number of pre-written authentication scripts out-of-the-box. Learn more in the [authentication guide](../authn-guide/intro.md). 
